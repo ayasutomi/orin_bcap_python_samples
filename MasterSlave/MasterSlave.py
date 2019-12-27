@@ -1,24 +1,19 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-# master Robot - COBOTTA
-# slave Robot - COBOTTA or VS or VM
-# 
-
 import pybcapclient.bcapclient as bcap
 import time
 import ctypes
 
-### Config ###
+# --- Config --- #
 MasterIpStr = "192.168.0.1"
 SlaveIpStr = "192.168.0.2"
 port = 5007
 timeout = 2000
-##############
+# --------------------------- #
+
 
 def getkey(key):
-    return(bool(ctypes.windll.user32.GetAsyncKeyState(key)&0x8000))
+    return(bool(ctypes.windll.user32.GetAsyncKeyState(key) & 0x8000))
 # End def
+
 
 def printlist():
     print("[ESC] : Close Application")
@@ -26,40 +21,41 @@ def printlist():
     print("[2] : End Synchro Mode")
 # End def
 
+
 ESC = 0x1B          # Virtual key code of [ESC] key
 key_1 = 0X31        # Virtual key code of [1] key
 key_2 = 0X32        # Virtual key code of [2] key
 
-### Connection processing of tcp communication
-m_bcapclient = bcap.BCAPClient(MasterIpStr,port,timeout)
-s_bcapclient = bcap.BCAPClient(SlaveIpStr,port,timeout)
+# Connection processing of tcp communication
+m_bcapclient = bcap.BCAPClient(MasterIpStr, port, timeout)
+s_bcapclient = bcap.BCAPClient(SlaveIpStr, port, timeout)
 print("Open Connection")
 
-### start b_cap Service
+# start b_cap Service
 m_bcapclient.service_start("")
 s_bcapclient.service_start("")
 print("Send SERVICE_START packet")
 
-### set Parameter
+# set Parameter
 Name = ""
-Provider="CaoProv.DENSO.VRC"
+Provider = "CaoProv.DENSO.VRC"
 Machine = ("localhost")
 Option = ("")
 
 # Connect To RC8
-m_hctrl = m_bcapclient.controller_connect(Name,Provider,Machine,Option)
-s_hctrl = s_bcapclient.controller_connect(Name,Provider,Machine,Option)
+m_hctrl = m_bcapclient.controller_connect(Name, Provider, Machine, Option)
+s_hctrl = s_bcapclient.controller_connect(Name, Provider, Machine, Option)
 
-m_hrob = m_bcapclient.controller_getrobot(m_hctrl,"m_Arm")
-s_hrob = s_bcapclient.controller_getrobot(s_hctrl,"s_Arm")
+m_hrob = m_bcapclient.controller_getrobot(m_hctrl, "m_Arm")
+s_hrob = s_bcapclient.controller_getrobot(s_hctrl, "s_Arm")
 
 loop_flg = True
 sync_flg = False
 tmpio = True
 
-s_bcapclient.robot_execute(s_hrob,"TakeArm",[0,0])
-s_bcapclient.robot_execute(s_hrob,"Motor",[1,0])
-s_bcapclient.robot_execute(s_hrob,"ExtSpeed",100)
+s_bcapclient.robot_execute(s_hrob, "TakeArm", [0, 0])
+s_bcapclient.robot_execute(s_hrob, "Motor", [1, 0])
+s_bcapclient.robot_execute(s_hrob, "ExtSpeed", 100)
 
 print("Connect and Init OK")
 print("[ESC] : Close Application")
@@ -67,7 +63,7 @@ print("[1] : Start Synchro Mode")
 print("[2] : End Synchro Mode")
 print("=====Synchro Off=====")
 
-Param = [-1,1]
+Param = [-1, 1]
 ret = 0
 handFlg = False
 m_handPos_old = 0.0
@@ -77,11 +73,12 @@ while loop_flg:
     start = time.time()
 
     # Get Master Robot Datas
-    m_jnt = m_bcapclient.robot_execute(m_hrob,"CurJnt")
-    m_handPos = m_bcapclient.controller_execute(m_hctrl,"HandCurPos")
-    posedata = [m_jnt,"J","@P"]
+    m_jnt = m_bcapclient.robot_execute(m_hrob, "CurJnt")
+    m_handPos = m_bcapclient.controller_execute(m_hctrl, "HandCurPos")
+    posedata = [m_jnt, "J", "@P"]
     # Check slave robot moving
-    ret_motion_comp = s_bcapclient.robot_execute(s_hrob,"MotionComplete",Param)
+    ret_motion_comp = s_bcapclient.robot_execute(
+        s_hrob, "MotionComplete", Param)
 
     '''
     # COBOTTA Hand check dist
@@ -92,14 +89,14 @@ while loop_flg:
     # End if
     '''
     if sync_flg:
-        if(ret_motion_comp==True):
-           s_bcapclient.robot_execute(s_hrob,"MotionSkip",[-1,3])
-        posout =  "J(" + ', '.join(map(str, m_jnt)) + ")"
+        if(ret_motion_comp == True):
+           s_bcapclient.robot_execute(s_hrob, "MotionSkip", [-1, 3])
+        posout = "J(" + ', '.join(map(str, m_jnt)) + ")"
         print(posout)
-        s_outrange = s_bcapclient.robot_execute(s_hrob,"OutRange",posout) 
-        if(s_outrange==0):
-            s_bcapclient.robot_move(s_hrob,1,posedata,"Next")
-        
+        s_outrange = s_bcapclient.robot_execute(s_hrob, "OutRange", posout)
+        if(s_outrange == 0):
+            s_bcapclient.robot_move(s_hrob, 1, posedata, "Next")
+
    '''
     # COBOTTA Hand move
     s_handpos = s_bcapclient.controller_execute(s_hctrl,"HandCurPos")
@@ -133,13 +130,13 @@ while loop_flg:
     if(elapsed_time < 0.004):
         print("===================================")
 '''
-    #End If
-#End while
+    # End If
+# End while
 
-###Give Arm 
+# Give Arm 
 s_bcapclient.robot_execute(s_hrob,"GiveArm")
 
-###DisConnect
+# DisConnect
 if(m_hrob != 0):
     m_bcapclient.robot_release(m_hrob)
 if(s_hrob != 0):
